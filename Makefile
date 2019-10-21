@@ -1,6 +1,6 @@
 all: testdeps
-	go test ./...
-	go test ./... -short -race
+	go test ./... -v
+	go test ./... -short -race -v
 	env GOOS=linux GOARCH=386 go test ./...
 	go vet
 	go get github.com/gordonklaus/ineffassign
@@ -9,7 +9,7 @@ all: testdeps
 testdeps: testdata/redis/src/redis-server
 
 bench: testdeps
-	go test ./... -test.run=NONE -test.bench=. -test.benchmem
+	go test ./... -v -test.run=NONE -test.bench=. -test.benchmem
 
 .PHONY: all test testdeps bench
 

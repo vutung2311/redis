@@ -1,0 +1,16 @@
+version: '2.2'
+
+services:
+
+  buildbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /go/src/github.com/go-redis/redis
+    volumes:
+      - ./:/go/src/github.com/go-redis/redis/
+      - /go/src/github.com/go-redis/redis/testdata/
+      - ./testdata/redis.conf:/go/src/github.com/go-redis/redis/testdata/redis.conf
+    environment:
+      - GO111MODULE=on
+    command: make all
