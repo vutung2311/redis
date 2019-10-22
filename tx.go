@@ -13,6 +13,8 @@ const TxFailedErr = proto.RedisError("redis: transaction failed")
 // by multiple goroutines, because Exec resets list of watched keys.
 // If you don't need WATCH it is better to use Pipeline.
 type Tx struct {
+	isPipelinePerformed bool
+
 	statefulCmdable
 	baseClient
 }
@@ -37,19 +39,22 @@ func (c *Client) Watch(fn func(*Tx) error, keys ...string) error {
 	tx := c.newTx()
 	if len(keys) > 0 {
 		if err := tx.Watch(keys...).Err(); err != nil {
+			_ = tx.Unwatch().Err()
 			_ = tx.Close()
 			return err
 		}
 	}
 
 	err := fn(tx)
+	if !tx.isPipelinePerformed {
+		_ = tx.Unwatch().Err()
+	}
 	_ = tx.Close()
 	return err
 }
 
 // Close closes the transaction, releasing any open resources.
 func (c *Tx) Close() error {
-	_ = c.Unwatch().Err()
 	return c.baseClient.Close()
 }
 
@@ -81,7 +86,13 @@ func (c *Tx) Unwatch(keys ...string) *StatusCmd {
 // Pipeline creates a new pipeline. It is more convenient to use Pipelined.
 func (c *Tx) Pipeline() Pipeliner {
 	pipe := Pipeline{
-		exec: c.processTxPipeline,
+		exec: func(cmders []Cmder) error {
+			defer func() {
+				c.isPipelinePerformed = true
+			}()
+
+			return c.processTxPipeline(cmders)
+		},
 	}
 	pipe.statefulCmdable.setProcessor(pipe.Process)
 	return &pipe
