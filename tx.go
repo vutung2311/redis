@@ -28,6 +28,12 @@ func (c *Client) newTx() *Tx {
 	}
 	tx.baseClient.init()
 	tx.statefulCmdable.setProcessor(tx.Process)
+	if c.baseClient.processWrapper != nil {
+		tx.baseClient.WrapProcess(c.baseClient.processWrapper)
+	}
+	if c.baseClient.processPipelineWrapper != nil {
+		tx.baseClient.WrapProcessPipeline(c.baseClient.processPipelineWrapper)
+	}
 	return &tx
 }
 

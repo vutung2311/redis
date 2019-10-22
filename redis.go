@@ -32,7 +32,9 @@ type baseClient struct {
 	processPipeline   func([]Cmder) error
 	processTxPipeline func([]Cmder) error
 
-	onClose func() error // hook called when client is closed
+	onClose                func() error // hook called when client is closed
+	processWrapper         func(oldProcess func(cmd Cmder) error) func(cmd Cmder) error
+	processPipelineWrapper func(oldProcess func([]Cmder) error) func([]Cmder) error
 }
 
 func (c *baseClient) init() {
@@ -170,6 +172,7 @@ func (c *baseClient) Do(args ...interface{}) *Cmd {
 func (c *baseClient) WrapProcess(
 	fn func(oldProcess func(cmd Cmder) error) func(cmd Cmder) error,
 ) {
+	c.processWrapper = fn
 	c.process = fn(c.process)
 }
 
@@ -255,6 +258,7 @@ func (c *baseClient) getAddr() string {
 func (c *baseClient) WrapProcessPipeline(
 	fn func(oldProcess func([]Cmder) error) func([]Cmder) error,
 ) {
+	c.processPipelineWrapper = fn
 	c.processPipeline = fn(c.processPipeline)
 	c.processTxPipeline = fn(c.processTxPipeline)
 }
